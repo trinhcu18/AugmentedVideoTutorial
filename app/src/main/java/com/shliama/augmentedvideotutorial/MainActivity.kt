@@ -7,6 +7,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
+import butterknife.ButterKnife
+import butterknife.OnClick
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        ButterKnife.bind(this)
 
         if (openGlVersion.toDouble() >= MIN_OPEN_GL_VERSION) {
             supportFragmentManager.inTransaction { replace(R.id.fragmentContainer, ArVideoFragment()) }
@@ -29,6 +32,11 @@ class MainActivity : AppCompatActivity() {
                 .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
                 .show()
         }
+    }
+
+    @OnClick(R.id.btnBack)
+    fun onClickBack(){
+        onBackPressed()
     }
 
     private inline fun FragmentManager.inTransaction(func: FragmentTransaction.() -> FragmentTransaction) {

@@ -1,5 +1,6 @@
 package com.shliama.augmentedvideotutorial
 
+import android.bluetooth.BluetoothClass.Device
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -7,6 +8,7 @@ import butterknife.BindView
 import butterknife.ButterKnife
 import butterknife.OnClick
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.shliama.augmentedvideotutorial.utils.DeviceIDUtil
 import io.github.hyuwah.draggableviewlib.DraggableView
 
 class HomeAct : AppCompatActivity() {
@@ -17,8 +19,18 @@ class HomeAct : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         ButterKnife.bind(this)
-
         setDragDropFloatingBtn()
+
+        initData()
+
+    }
+
+    private fun initData() {
+        loadUserInfo()
+    }
+
+    private fun loadUserInfo() {
+        val userDeviceId = DeviceIDUtil.getDeviceID(this)
     }
 
     private fun setDragDropFloatingBtn() {

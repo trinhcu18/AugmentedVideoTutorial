@@ -4,6 +4,24 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="android:textViewStyle">@style/MyAppTextViewStyle</item>
+        <item name="android:buttonStyle">@style/MyAppButtonStyle</item>
+        <item name="android:editTextStyle">@style/MyAppEditTextStyle</item>
     </style>
 
+
+    <!-- Define custom styles for TextView, Button, and EditText -->
+    <style name="MyAppTextViewStyle" parent="Widget.AppCompat.TextView">
+        <item name="fontFamily">@font/svn_poppins_regular</item>
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="MyAppButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="android:fontFamily">@font/svn_poppins_semibold</item>
+    </style>
+
+    <style name="MyAppEditTextStyle" parent="Widget.AppCompat.EditText">
+        <item name="android:fontFamily">@font/svn_poppins_regular</item>
+    </style>
 </resources>
