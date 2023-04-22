@@ -27,6 +27,7 @@ import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import java.io.IOException
 
+
 open class ArVideoFragment : ArFragment() {
 
     private lateinit var mediaPlayer: MediaPlayer
@@ -55,6 +56,17 @@ open class ArVideoFragment : ArFragment() {
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+    }
+
+    private fun loadDatabase(session: Session): AugmentedImageDatabase? {
+        val imageDatabase = this.activity?.assets?.open("test_image_1.imgdb").use {
+            AugmentedImageDatabase.deserialize(session, it)
+        }
+        return imageDatabase
+    }
+
     override fun getSessionConfiguration(session: Session): Config {
 
         fun loadAugmentedImageBitmap(imageName: String): Bitmap =
@@ -68,6 +80,14 @@ open class ArVideoFragment : ArFragment() {
                     db.addImage(TEST_VIDEO_3, loadAugmentedImageBitmap(TEST_IMAGE_3))
                 }
                 return true
+
+//                val imgDB = loadDatabase(session)?.also { db ->
+//                    db.addImage(TEST_VIDEO_1, loadAugmentedImageBitmap(TEST_IMAGE_1))
+//                }
+//                if (imgDB != null){
+//                    config.augmentedImageDatabase = imgDB
+//                    return true
+//                }
             } catch (e: IllegalArgumentException) {
                 Log.e(TAG, "Could not add bitmap to augmented image database", e)
             } catch (e: IOException) {
@@ -187,9 +207,9 @@ open class ArVideoFragment : ArFragment() {
                     descriptor.length
                 )
 
-                val videoWidth = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_WIDTH).toFloatOrNull() ?: 0f
-                val videoHeight = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_HEIGHT).toFloatOrNull() ?: 0f
-                val videoRotation = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_ROTATION).toFloatOrNull() ?: 0f
+                val videoWidth = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 0f
+                val videoHeight = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 0f
+                val videoRotation = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
 
                 // Account for video rotation, so that scale logic math works properly
                 val imageSize = RectF(0f, 0f, augmentedImage.extentX, augmentedImage.extentZ)
@@ -240,6 +260,41 @@ open class ArVideoFragment : ArFragment() {
         }
     }
 
+    private fun playVideoFromUrl(augmentedImage: AugmentedImage){
+        val metadataRetriever = MediaMetadataRetriever()
+        metadataRetriever.setDataSource(augmentedImage.name, hashMapOf())
+
+        val videoWidth = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 0f
+        val videoHeight = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 0f
+        val videoRotation = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
+
+//                // Account for video rotation, so that scale logic math works properly
+        val imageSize = RectF(0f, 0f, augmentedImage.extentX, augmentedImage.extentZ)
+            .transform(rotationMatrix(videoRotation))
+
+        val videoScaleType = VideoScaleType.CenterCrop
+
+        videoAnchorNode.setVideoProperties(
+            videoWidth = videoWidth, videoHeight = videoHeight, videoRotation = videoRotation,
+            imageWidth = imageSize.width(), imageHeight = imageSize.height(),
+            videoScaleType = videoScaleType
+        )
+
+        // Update the material parameters
+        videoRenderable.material.setFloat2(MATERIAL_IMAGE_SIZE, imageSize.width(), imageSize.height())
+        videoRenderable.material.setFloat2(MATERIAL_VIDEO_SIZE, videoWidth, videoHeight)
+        videoRenderable.material.setBoolean(MATERIAL_VIDEO_CROP, VIDEO_CROP_ENABLED)
+
+        mediaPlayer.reset()
+        mediaPlayer.setDataSource(augmentedImage.name)
+
+        mediaPlayer.isLooping = true
+        mediaPlayer.setOnPreparedListener {
+            it.start()
+        }
+        mediaPlayer.prepareAsync()
+    }
+
     override fun onPause() {
         super.onPause()
         dismissArVideo()
@@ -257,7 +312,7 @@ open class ArVideoFragment : ArFragment() {
         private const val TEST_IMAGE_2 = "test_image_2.jpg"
         private const val TEST_IMAGE_3 = "test_image_3.jpg"
 
-        private const val TEST_VIDEO_1 = "test_video_1.mp4"
+        private const val TEST_VIDEO_1 = "test_video_1_1.mp4"
         private const val TEST_VIDEO_2 = "test_video_2.mp4"
         private const val TEST_VIDEO_3 = "test_video_3.mp4"
 

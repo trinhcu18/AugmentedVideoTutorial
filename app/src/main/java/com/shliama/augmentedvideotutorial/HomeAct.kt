@@ -1,5 +1,6 @@
 package com.shliama.augmentedvideotutorial
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import butterknife.BindView
@@ -28,7 +29,8 @@ class HomeAct : AppCompatActivity() {
 
     @OnClick(R.id.id_camera)
     fun onClickOpenCamera() {
-        // onClickOpenCamera
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
     }
 
     @OnClick(R.id.id_icon_add)
