@@ -1,36 +1,45 @@
 package com.shliama.augmentedvideotutorial
 
-import android.bluetooth.BluetoothClass.Device
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import butterknife.BindView
 import butterknife.ButterKnife
 import butterknife.OnClick
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.shliama.augmentedvideotutorial.retrofit.ApiHelper
 import com.shliama.augmentedvideotutorial.utils.DeviceIDUtil
 import io.github.hyuwah.draggableviewlib.DraggableView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HomeAct : AppCompatActivity() {
     @BindView(R.id.id_camera)
     lateinit var floatingBtn: FloatingActionButton
 
+    lateinit var homeAdapter : HomeAdapter
+
+    @BindView(R.id.id_rec_list)
+    lateinit var mRecList: RecyclerView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         ButterKnife.bind(this)
+
         setDragDropFloatingBtn()
+    }
 
+    override fun onResume() {
+        super.onResume()
         initData()
-
     }
 
     private fun initData() {
-        loadUserInfo()
-    }
-
-    private fun loadUserInfo() {
-        val userDeviceId = DeviceIDUtil.getDeviceID(this)
+        getDataOwner()
     }
 
     private fun setDragDropFloatingBtn() {
@@ -48,5 +57,34 @@ class HomeAct : AppCompatActivity() {
     @OnClick(R.id.id_icon_add)
     fun onClickAddImageAndVideo() {
         // onClickAddImageAndVideo
+         val intent = Intent(this, UploadAct::class.java)
+        startActivity(intent)
+    }
+
+    private fun getDataOwner() {
+        val userDeviceId = DeviceIDUtil.getDeviceID(this).toString()
+
+        if (userDeviceId.isNotEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val dataOwnerRemote = ApiHelper.myApiService.getDataOwner(userDeviceId)
+                    val data = dataOwnerRemote.imageTargets ?: emptyList()
+                    homeAdapter = HomeAdapter(data)
+                    withContext(Dispatchers.Main){
+                        mRecList.adapter = homeAdapter
+                    }
+                    userFolderId = dataOwnerRemote.id
+
+                } catch (e: java.lang.Exception){
+                    e.printStackTrace()
+
+                }
+            }
+        }
+
+    }
+
+    companion object {
+        var userFolderId: String? = null
     }
 }
