@@ -2,15 +2,25 @@ package com.shliama.augmentedvideotutorial
 
 import android.content.Intent
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import butterknife.BindView
 import butterknife.ButterKnife
 import butterknife.OnClick
+import com.shliama.augmentedvideotutorial.retrofit.ApiHelper
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 
 
 class UploadAct : AppCompatActivity() {
@@ -35,6 +45,10 @@ class UploadAct : AppCompatActivity() {
     @BindView(R.id.id_txtUploadVideo)
     lateinit var txtUploadVideo: TextView
 
+    var mImageURL : Uri?= null
+
+    var mVideoURL : Uri?= null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_upload)
@@ -54,6 +68,28 @@ class UploadAct : AppCompatActivity() {
         startActivityForResult( intent, PICK_VIDEO_REQUEST_CODE)
     }
 
+    @OnClick(R.id.id_uploadToServer)
+    fun onClickUploadFileToServer() {
+        val file = File(getRealPathFromURI(mImageURL))
+        val requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), file)
+        val filePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
+
+        val fileAudio = File(getRealPathFromURI(mVideoURL))
+        val requestFileAudio = RequestBody.create(MediaType.parse("multipart/form-data"), fileAudio)
+        val filePartAudio = MultipartBody.Part.createFormData("video", fileAudio.name, requestFileAudio)
+
+        val folderId: RequestBody = RequestBody.create(MediaType.parse("text/plain"), "1")
+
+        lifecycleScope.launch(Dispatchers.IO){
+            try {
+                val uploadResult = ApiHelper.myApiService.uploadIFileToServer(filePart, filePartAudio, folderId)
+                Toast.makeText(this@UploadAct, "Upload Success", Toast.LENGTH_SHORT).show()
+            } catch (e: java.lang.Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (data == null) {
@@ -63,6 +99,7 @@ class UploadAct : AppCompatActivity() {
 
         if (requestCode == PICK_VIDEO_REQUEST_CODE && resultCode == RESULT_OK) {
             val videoURL = data.data
+            mVideoURL = videoURL
             val retriever = MediaMetadataRetriever()
             videoURL?.let { uri ->
                 contentResolver.openFileDescriptor(uri, "r")?.use { fileDescriptor ->
@@ -78,6 +115,7 @@ class UploadAct : AppCompatActivity() {
 
         if (requestCode == PICK_IMAGE_REQUEST_CODE && resultCode == RESULT_OK) {
             val imageURL = data.data
+            mImageURL = imageURL
             imgUploadPreView.setImageURI(imageURL)
         }else{
             setVisibilityUploadView()
@@ -89,5 +127,14 @@ class UploadAct : AppCompatActivity() {
         btnUploadVideo.visibility = View.VISIBLE
         txtUploadImage.visibility = View.VISIBLE
         txtUploadVideo.visibility = View.VISIBLE
+    }
+
+    private fun getRealPathFromURI(uri: Uri?): String {
+        val cursor = contentResolver.query(uri!!, null, null, null, null)
+        cursor!!.moveToFirst()
+        val index = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA)
+        val path = cursor.getString(index)
+        cursor.close()
+        return path
     }
 }
