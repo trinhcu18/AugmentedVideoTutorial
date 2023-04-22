@@ -10,5 +10,6 @@ object ApiHelper {
         .build()
 
     val myApiService = retrofit.create(MyApiService::class.java)
+    val downloadVideoService = retrofit.create(DownloadVideoService::class.java)
 
 }
