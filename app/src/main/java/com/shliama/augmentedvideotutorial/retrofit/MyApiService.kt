@@ -1,5 +1,6 @@
 package com.shliama.augmentedvideotutorial.retrofit
 
+import com.shliama.augmentedvideotutorial.model.OwnerResponse
 import com.shliama.augmentedvideotutorial.model.UploadFileServerResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -12,6 +13,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface MyApiService {
     @Multipart
@@ -21,4 +23,8 @@ interface MyApiService {
         @Part video : MultipartBody.Part,
         @Part("folderId")  folderId : RequestBody
     ) : UploadFileServerResponse
+
+    @GET("folders-by-device-id")
+    suspend fun getDataOwner(@Query("deviceId") deviceId : String) : OwnerResponse
+
 }
