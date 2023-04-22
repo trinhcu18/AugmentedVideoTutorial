@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.media.MediaMetadataRetriever
 import android.media.MediaMetadataRetriever.*
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -17,6 +18,7 @@ import android.widget.Toast
 import androidx.core.animation.doOnStart
 import androidx.core.graphics.rotationMatrix
 import androidx.core.graphics.transform
+import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.AugmentedImage
 import com.google.ar.core.AugmentedImageDatabase
 import com.google.ar.core.Config
@@ -25,6 +27,10 @@ import com.google.ar.sceneform.FrameTime
 import com.google.ar.sceneform.rendering.ExternalTexture
 import com.google.ar.sceneform.rendering.ModelRenderable
 import com.google.ar.sceneform.ux.ArFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 
 
@@ -33,7 +39,7 @@ open class ArVideoFragment : ArFragment() {
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var externalTexture: ExternalTexture
     private lateinit var videoRenderable: ModelRenderable
-    private lateinit var videoAnchorNode: VideoAnchorNode
+    private var videoAnchorNode: VideoAnchorNode? = null
 
     private var activeAugmentedImage: AugmentedImage? = null
 
@@ -50,21 +56,22 @@ open class ArVideoFragment : ArFragment() {
         arSceneView.planeRenderer.isEnabled = false
         arSceneView.isLightEstimationEnabled = false
 
-        initializeSession()
-        createArScene()
-
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-    }
-
-    private fun loadDatabase(session: Session): AugmentedImageDatabase? {
-        val imageDatabase = this.activity?.assets?.open("test_image_1.imgdb").use {
-            AugmentedImageDatabase.deserialize(session, it)
+        lifecycleScope.launchWhenResumed {
+            withContext(Dispatchers.IO) {
+                while (MainActivity.mapImageVideo.isEmpty()) {
+                    delay(3000)
+                }
+                withContext(Dispatchers.Main) {
+                    initializeSession()
+                    createArScene()
+                }
+            }
         }
-        return imageDatabase
     }
 
     override fun getSessionConfiguration(session: Session): Config {
@@ -75,9 +82,16 @@ open class ArVideoFragment : ArFragment() {
         fun setupAugmentedImageDatabase(config: Config, session: Session): Boolean {
             try {
                 config.augmentedImageDatabase = AugmentedImageDatabase(session).also { db ->
-                    db.addImage(TEST_VIDEO_1, loadAugmentedImageBitmap(TEST_IMAGE_1))
-                    db.addImage(TEST_VIDEO_2, loadAugmentedImageBitmap(TEST_IMAGE_2))
-                    db.addImage(TEST_VIDEO_3, loadAugmentedImageBitmap(TEST_IMAGE_3))
+//                    db.addImage(TEST_VIDEO_1, loadAugmentedImageBitmap(TEST_IMAGE_1))
+//                    db.addImage(TEST_VIDEO_2, loadAugmentedImageBitmap(TEST_IMAGE_2))
+//                    db.addImage(TEST_VIDEO_3, loadAugmentedImageBitmap(TEST_IMAGE_3))
+
+                    MainActivity.mapImageVideo.forEach { imgUri, bitmap ->
+                        if (bitmap != null) {
+                            db.addImage(imgUri, bitmap)
+                            Log.d(TAG, "Load uri: ${imgUri}")
+                        }
+                    }
                 }
                 return true
 
@@ -168,7 +182,12 @@ open class ArVideoFragment : ArFragment() {
         // Otherwise - make the first tracked image active and start video playback
         fullTrackingImages.firstOrNull()?.let { augmentedImage ->
             try {
-                playbackArVideo(augmentedImage)
+                Log.d(TAG, "Try to play video [${augmentedImage.name}]")
+                if (!augmentedImage.name.startsWith("test")) {
+                    playVideoFromUrl(augmentedImage)
+                } else {
+                    playbackArVideo(augmentedImage)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Could not play video [${augmentedImage.name}]", e)
             }
@@ -178,7 +197,7 @@ open class ArVideoFragment : ArFragment() {
     private fun isArVideoPlaying() = mediaPlayer.isPlaying
 
     private fun pauseArVideo() {
-        videoAnchorNode.renderable = null
+        videoAnchorNode?.renderable = null
         mediaPlayer.pause()
     }
 
@@ -188,8 +207,8 @@ open class ArVideoFragment : ArFragment() {
     }
 
     private fun dismissArVideo() {
-        videoAnchorNode.anchor?.detach()
-        videoAnchorNode.renderable = null
+        videoAnchorNode?.anchor?.detach()
+        videoAnchorNode?.renderable = null
         activeAugmentedImage = null
         mediaPlayer.reset()
     }
@@ -217,7 +236,7 @@ open class ArVideoFragment : ArFragment() {
 
                 val videoScaleType = VideoScaleType.CenterCrop
 
-                videoAnchorNode.setVideoProperties(
+                videoAnchorNode?.setVideoProperties(
                     videoWidth = videoWidth, videoHeight = videoHeight, videoRotation = videoRotation,
                     imageWidth = imageSize.width(), imageHeight = imageSize.height(),
                     videoScaleType = videoScaleType
@@ -237,8 +256,8 @@ open class ArVideoFragment : ArFragment() {
             }
 
 
-        videoAnchorNode.anchor?.detach()
-        videoAnchorNode.anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
+        videoAnchorNode?.anchor?.detach()
+        videoAnchorNode?.anchor = augmentedImage.createAnchor(augmentedImage.centerPose)
 
         activeAugmentedImage = augmentedImage
 
@@ -255,26 +274,29 @@ open class ArVideoFragment : ArFragment() {
             addUpdateListener { v ->
                 videoRenderable.material.setFloat(MATERIAL_VIDEO_ALPHA, v.animatedValue as Float)
             }
-            doOnStart { videoAnchorNode.renderable = videoRenderable }
+            doOnStart { videoAnchorNode?.renderable = videoRenderable }
             start()
         }
     }
 
-    private fun playVideoFromUrl(augmentedImage: AugmentedImage){
+    private fun playVideoFromUrl(augmentedImage: AugmentedImage) {
         val metadataRetriever = MediaMetadataRetriever()
-        metadataRetriever.setDataSource(augmentedImage.name, hashMapOf())
+        if (augmentedImage.name.startsWith("http")) {
+            metadataRetriever.setDataSource(augmentedImage.name, hashMapOf())
+        } else {
+            metadataRetriever.setDataSource(context, Uri.fromFile(File(augmentedImage.name)))
+        }
 
         val videoWidth = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 0f
         val videoHeight = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 0f
         val videoRotation = metadataRetriever.extractMetadata(METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
 
-//                // Account for video rotation, so that scale logic math works properly
         val imageSize = RectF(0f, 0f, augmentedImage.extentX, augmentedImage.extentZ)
             .transform(rotationMatrix(videoRotation))
 
         val videoScaleType = VideoScaleType.CenterCrop
 
-        videoAnchorNode.setVideoProperties(
+        videoAnchorNode?.setVideoProperties(
             videoWidth = videoWidth, videoHeight = videoHeight, videoRotation = videoRotation,
             imageWidth = imageSize.width(), imageHeight = imageSize.height(),
             videoScaleType = videoScaleType

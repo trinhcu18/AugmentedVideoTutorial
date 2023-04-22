@@ -24,7 +24,7 @@ class HomeAct : AppCompatActivity() {
     @BindView(R.id.id_camera)
     lateinit var floatingBtn: FloatingActionButton
 
-    lateinit var homeAdapter : HomeAdapter
+    lateinit var homeAdapter: HomeAdapter
 
     @BindView(R.id.id_rec_list)
     lateinit var mRecList: RecyclerView
@@ -47,21 +47,25 @@ class HomeAct : AppCompatActivity() {
     }
 
     private fun setDragDropFloatingBtn() {
-        var draggableView : DraggableView<FloatingActionButton> = DraggableView.Builder(floatingBtn)
+        var draggableView: DraggableView<FloatingActionButton> = DraggableView.Builder(floatingBtn)
             .setStickyMode(DraggableView.Mode.STICKY_X)
             .build()
     }
 
     @OnClick(R.id.id_camera)
     fun onClickOpenCamera() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
+        lifecycleScope.launch {
+            MainActivity.loadImages(this@HomeAct, homeAdapter.imageTargetList)
+            val intent = Intent(this@HomeAct, MainActivity::class.java)
+            startActivity(intent)
+
+        }
     }
 
     @OnClick(R.id.id_icon_add)
     fun onClickAddImageAndVideo() {
         // onClickAddImageAndVideo
-         val intent = Intent(this, UploadAct::class.java)
+        val intent = Intent(this, UploadAct::class.java)
         startActivity(intent)
     }
 
@@ -74,20 +78,19 @@ class HomeAct : AppCompatActivity() {
                     val dataOwnerRemote = ApiHelper.myApiService.getDataOwner(userDeviceId)
                     val data = dataOwnerRemote.imageTargets ?: emptyList()
                     homeAdapter = HomeAdapter(data)
-                    withContext(Dispatchers.Main){
+                    withContext(Dispatchers.Main) {
                         mRecList.adapter = homeAdapter
                     }
                     userFolderId = dataOwnerRemote.id
-                    for (imageTarget in data){
-                        if (!isVideoExistInLocal(imageTarget.folderId, imageTarget.id)){
+                    for (imageTarget in data) {
+                        if (!isVideoExistInLocal(imageTarget.folderId, imageTarget.id)) {
                             val videoURL = imageTarget.videoUrl
                             if (videoURL != null)
-                            DownloadHelper(this@HomeAct).
-                            downloadVideoByURL(videoURL,imageTarget.folderId, imageTarget.id)
+                                DownloadHelper(this@HomeAct).downloadVideoByURL(videoURL, imageTarget.folderId, imageTarget.id)
                         }
                     }
 
-                } catch (e: java.lang.Exception){
+                } catch (e: java.lang.Exception) {
                     e.printStackTrace()
 
                 }
@@ -100,9 +103,9 @@ class HomeAct : AppCompatActivity() {
         var userFolderId: String? = null
     }
 
-   fun isVideoExistInLocal( folderId: String?, targetId:String?) : Boolean{
-       val defaultDir = this.filesDir
-       val localVideoFile = File(defaultDir.path,"$folderId/$targetId.mp4");
-       return localVideoFile.exists()
-   }
+    fun isVideoExistInLocal(folderId: String?, targetId: String?): Boolean {
+        val defaultDir = this.filesDir
+        val localVideoFile = File(defaultDir.path, "$folderId/$targetId.mp4");
+        return localVideoFile.exists()
+    }
 }

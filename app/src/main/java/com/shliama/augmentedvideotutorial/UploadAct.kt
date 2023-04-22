@@ -49,14 +49,14 @@ class UploadAct : AppCompatActivity() {
     lateinit var txtUploadVideo: TextView
 
     @BindView(R.id.progress)
-    lateinit var mProgressBar : View
+    lateinit var mProgressBar: View
 
     @BindView(R.id.id_uploadToServer)
-    lateinit var mBtnUploadFile : AppCompatButton
+    lateinit var mBtnUploadFile: AppCompatButton
 
-    var mImageURL : Uri?= null
+    var mImageURL: Uri? = null
 
-    var mVideoURL : Uri?= null
+    var mVideoURL: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,22 +64,27 @@ class UploadAct : AppCompatActivity() {
         ButterKnife.bind(this)
     }
 
-    @OnClick(R.id.id_imgUploadImage)
+    @OnClick(R.id.btnBack)
+    fun onClickBack() {
+        finish()
+    }
+
+    @OnClick(R.id.relativeLayout)
     fun onClickUploadImage() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult( intent, PICK_IMAGE_REQUEST_CODE)
+        startActivityForResult(intent, PICK_IMAGE_REQUEST_CODE)
 
     }
 
-    @OnClick(R.id.id_imgUploadVideo)
+    @OnClick(R.id.relativeLayout2)
     fun onClickUploadVideo() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult( intent, PICK_VIDEO_REQUEST_CODE)
+        startActivityForResult(intent, PICK_VIDEO_REQUEST_CODE)
     }
 
     @OnClick(R.id.id_uploadToServer)
     fun onClickUploadFileToServer() {
-        if (mImageURL == null || mVideoURL == null ) {
+        if (mImageURL == null || mVideoURL == null) {
             Toast.makeText(this@UploadAct, "Select Image and Video", Toast.LENGTH_SHORT).show()
             return
         }
@@ -95,19 +100,19 @@ class UploadAct : AppCompatActivity() {
 
         val folderId: RequestBody = RequestBody.create(MediaType.parse("text/plain"), fid)
 
-        lifecycleScope.launch(Dispatchers.Main){
+        lifecycleScope.launch(Dispatchers.Main) {
             mBtnUploadFile.visibility = View.GONE
             mProgressBar.visibility = View.VISIBLE
             try {
-                val uploadResult = withContext(Dispatchers.IO){
+                val uploadResult = withContext(Dispatchers.IO) {
                     ApiHelper.myApiService.uploadIFileToServer(filePart, filePartAudio, folderId)
                 }
-                    Toast.makeText(this@UploadAct, "Upload Success", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@UploadAct, "Upload Success", Toast.LENGTH_SHORT).show()
                 finish()
-            } catch (e: java.lang.Exception){
+            } catch (e: java.lang.Exception) {
                 e.printStackTrace()
-                    Toast.makeText(this@UploadAct, "Upload Failed", Toast.LENGTH_SHORT).show()
-            }finally {
+                Toast.makeText(this@UploadAct, "Upload Failed", Toast.LENGTH_SHORT).show()
+            } finally {
                 mProgressBar.visibility = View.GONE
                 mBtnUploadFile.visibility = View.VISIBLE
             }
@@ -133,7 +138,7 @@ class UploadAct : AppCompatActivity() {
                 }
             }
             retriever.release()
-        }else{
+        } else {
             setVisibilityUploadView()
         }
 
@@ -141,7 +146,7 @@ class UploadAct : AppCompatActivity() {
             val imageURL = data.data
             mImageURL = imageURL
             imgUploadPreView.setImageURI(imageURL)
-        }else{
+        } else {
             setVisibilityUploadView()
         }
     }
