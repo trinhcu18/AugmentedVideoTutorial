@@ -107,7 +107,7 @@
         android:layout_centerInParent="true"
         android:layout_marginHorizontal="24dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="16dp"
+        app:cardElevation="8dp"
         app:cardUseCompatPadding="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -124,13 +124,21 @@
             android:textColor="@android:color/white"
             android:textStyle="bold" />
 
+    </com.google.android.material.card.MaterialCardView>
+
+    <FrameLayout
+        android:id="@+id/progress"
+        android:clickable="true"
+        android:visibility="gone"
+        android:background="#87333232"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="8dp">
+
         <ProgressBar
-            android:id="@+id/progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            />
-
-    </com.google.android.material.card.MaterialCardView>
+            android:layout_gravity="center" />
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,5 +1,7 @@
 package com.shliama.augmentedvideotutorial
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,10 +13,12 @@ import butterknife.OnClick
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.shliama.augmentedvideotutorial.retrofit.ApiHelper
 import com.shliama.augmentedvideotutorial.utils.DeviceIDUtil
+import com.shliama.augmentedvideotutorial.utils.DownloadHelper
 import io.github.hyuwah.draggableviewlib.DraggableView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class HomeAct : AppCompatActivity() {
     @BindView(R.id.id_camera)
@@ -74,6 +78,14 @@ class HomeAct : AppCompatActivity() {
                         mRecList.adapter = homeAdapter
                     }
                     userFolderId = dataOwnerRemote.id
+                    for (imageTarget in data){
+                        if (!isVideoExistInLocal(imageTarget.folderId, imageTarget.id)){
+                            val videoURL = imageTarget.videoUrl
+                            if (videoURL != null)
+                            DownloadHelper(this@HomeAct).
+                            downloadVideoByURL(videoURL,imageTarget.folderId, imageTarget.id)
+                        }
+                    }
 
                 } catch (e: java.lang.Exception){
                     e.printStackTrace()
@@ -87,4 +99,10 @@ class HomeAct : AppCompatActivity() {
     companion object {
         var userFolderId: String? = null
     }
+
+   fun isVideoExistInLocal( folderId: String?, targetId:String?) : Boolean{
+       val defaultDir = this.filesDir
+       val localVideoFile = File(defaultDir.path,"$folderId/$targetId.mp4");
+       return localVideoFile.exists()
+   }
 }

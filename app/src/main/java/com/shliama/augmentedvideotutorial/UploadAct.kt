@@ -49,7 +49,7 @@ class UploadAct : AppCompatActivity() {
     lateinit var txtUploadVideo: TextView
 
     @BindView(R.id.progress)
-    lateinit var mProgressBar : ProgressBar
+    lateinit var mProgressBar : View
 
     @BindView(R.id.id_uploadToServer)
     lateinit var mBtnUploadFile : AppCompatButton
@@ -103,12 +103,14 @@ class UploadAct : AppCompatActivity() {
                     ApiHelper.myApiService.uploadIFileToServer(filePart, filePartAudio, folderId)
                 }
                     Toast.makeText(this@UploadAct, "Upload Success", Toast.LENGTH_SHORT).show()
+                finish()
             } catch (e: java.lang.Exception){
                 e.printStackTrace()
                     Toast.makeText(this@UploadAct, "Upload Failed", Toast.LENGTH_SHORT).show()
+            }finally {
+                mProgressBar.visibility = View.GONE
+                mBtnUploadFile.visibility = View.VISIBLE
             }
-            mProgressBar.visibility = View.GONE
-            mBtnUploadFile.visibility = View.VISIBLE
         }
     }
 

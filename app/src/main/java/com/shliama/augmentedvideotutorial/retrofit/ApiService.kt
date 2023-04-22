@@ -5,6 +5,6 @@ import retrofit2.http.GET
 import retrofit2.http.Url
 
 interface DownloadVideoService {
-    @GET("anything")
-    suspend fun getData(@Url videoURL : String) : ResponseBody
+    @GET
+    suspend fun getVideoData(@Url videoURL : String) : ResponseBody
     }
